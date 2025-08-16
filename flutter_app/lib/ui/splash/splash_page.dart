@@ -24,12 +24,12 @@ class _SplashPageState extends State<SplashPage> {
             MaterialPageRoute(
               builder: (BuildContext context) => DashboardPage(),
             ),
-                (Route<dynamic> route) => false,
+            (Route<dynamic> route) => false,
           );
         } else {
           getIt<NavigationService>().navigator.pushAndRemoveUntil(
             MaterialPageRoute(builder: (BuildContext context) => AuthPage()),
-                (Route<dynamic> route) => false,
+            (Route<dynamic> route) => false,
           );
         }
       });
@@ -40,7 +40,9 @@ class _SplashPageState extends State<SplashPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Center(child: SizedBox(height: 80, child: Text('Splash'))),
+        child: Center(
+          child: SizedBox(height: 80, child: Image.asset('assets/icon.png')),
+        ),
       ),
     );
   }

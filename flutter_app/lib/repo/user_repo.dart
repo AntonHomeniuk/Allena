@@ -28,10 +28,59 @@ class UserRepo {
     await privy.logout();
   }
 
+  Future<void> mint() async {
+    /*final wallet = currentUser?.embeddedEthereumWallets[0];
+    wallet?.provider
+        .request(
+          EthereumRpcRequest(
+            method: 'eth_signTransaction',
+            params: [
+              jsonEncode({
+                "to": "0x736999a7f2e64c2e1F69F552c931E04cc1352443",
+                "chain_id": "0x15B32",
+                'value': '0x186a0',
+                'from':'${wallet.address}'
+              }),
+            ],
+          ),
+        )
+        .then((v) {
+          print('asd');
+        })
+        .onError((e, s) {});
+    (await currentUser?.getAccessToken())?.fold(
+      onSuccess: (token) async {
+        try {
+          await Dio().post(
+            'https://api.privy.io/v1/wallets/${wallet?.id}/rpc',
+            options: Options(
+              headers: {
+                'Content-Type': 'application/json',
+                'privy-authorization-signature': '$token',
+                'Authorization':
+                    'Basic ${base64.encode(utf8.encode('cmedf19v400j4l70bhm9ubix5:5AscHzURiha4dDDtqoeuPhgWq3kbnjUSfqzaQyZxXP1a2sPUfAQLLkxqK97pkbgGFQmV1gbzBssGzGhs7PVu8vw7'))}',
+                'privy-app-id': 'cmedf19v400j4l70bhm9ubix5',
+              },
+            ),
+            data:
+                '{"method": "eth_sign7702Authorization","params": {"contract": "0x736999a7f2e64c2e1F69F552c931E04cc1352443","chain_id": "15B32"}}',
+          );
+        } catch (e) {
+          print('asd ${(e as DioException).response}');
+        }
+      },
+      onFailure: (e) {
+        print('asd $e');
+      },
+    );*/
+  }
+
   Future<double> getBalance() async {
+    mint();
     try {
+      final wallet = currentUser?.embeddedEthereumWallets[0];
       final response = await Dio().get(
-        'https://spicy-explorer.chiliz.com/api?module=account&action=eth_get_balance&address=0x899522483e2a14e9dba6DeFc383490bC5f9959e6',
+        'https://spicy-explorer.chiliz.com/api?module=account&action=eth_get_balance&address=${wallet?.address}',
       );
 
       final hexString = (response.data as Map<String, dynamic>)['result']
@@ -91,6 +140,7 @@ class UserRepo {
               onError.call();
             }
           } else {
+            currentUser = u;
             onSuccess.call();
           }
         },

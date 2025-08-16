@@ -3,6 +3,7 @@ import 'package:allena/repo/navigation_service.dart';
 import 'package:allena/repo/user_repo.dart';
 import 'package:allena/ui/dashboard/dashboard_page.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -65,7 +66,11 @@ class _AuthScreenState extends State<AuthScreen> {
       },
       () {
         setState(() {
+          Fluttertoast.showToast(msg: 'Failed to authorize');
           _isLoading = false;
+          Future.delayed(Duration(milliseconds: 100)).then((v) {
+            otpFocusNode.requestFocus();
+          });
         });
       },
     );
@@ -74,47 +79,72 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('Email'),
-          TextField(
-            enabled: !_isLoading && !_isCodeSent,
-            controller: emailController,
-            onSubmitted: (s) {
-              _sendOtp();
-            },
-            keyboardType: TextInputType.emailAddress,
-            textInputAction: TextInputAction.next,
-            autofocus: true,
-          ),
-          if (_isCodeSent) ...[
-            Text('OTP'),
-            TextField(
-              enabled: !_isLoading,
-              focusNode: otpFocusNode,
-              controller: otpController,
-              keyboardType: TextInputType.numberWithOptions(
-                signed: false,
-                decimal: true,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Log in or sign up',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            Spacer(),
+            SizedBox(height: 40, child: Image.asset('assets/logo_text.png')),
+            SizedBox(height: 64),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                child: TextField(
+                  enabled: !_isLoading && !_isCodeSent,
+                  controller: emailController,
+                  decoration: InputDecoration(hintText: 'Email'),
+                  onSubmitted: (s) {
+                    _sendOtp();
+                  },
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  autofocus: true,
+                ),
               ),
             ),
+            if (_isCodeSent) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                  child: TextField(
+                    enabled: !_isLoading,
+                    focusNode: otpFocusNode,
+                    decoration: InputDecoration(
+                      fillColor: Colors.red,
+                      hintText: 'OTP',
+                    ),
+                    controller: otpController,
+                    keyboardType: TextInputType.numberWithOptions(
+                      signed: false,
+                      decimal: true,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            SizedBox(height: 16),
+            if (!_isCodeSent && !_isLoading)
+              ElevatedButton(
+                child: Text('Submit'),
+                onPressed: () {
+                  _sendOtp();
+                },
+              ),
+            if (_isCodeSent && !_isLoading)
+              ElevatedButton(
+                child: Text('Submit'),
+                onPressed: () {
+                  _checkOtp();
+                },
+              ),
+            Spacer(),
           ],
-          if (!_isCodeSent && !_isLoading)
-            ElevatedButton(
-              child: Text('Send'),
-              onPressed: () {
-                _sendOtp();
-              },
-            ),
-          if (_isCodeSent && !_isLoading)
-            ElevatedButton(
-              child: Text('Check'),
-              onPressed: () {
-                _checkOtp();
-              },
-            ),
-        ],
+        ),
       ),
     );
   }
