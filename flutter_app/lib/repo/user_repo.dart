@@ -1,7 +1,10 @@
 import 'dart:math';
 
 import 'package:dio/dio.dart';
+import 'package:http/http.dart' as http;
 import 'package:privy_flutter/privy_flutter.dart';
+import 'package:wallet/wallet.dart';
+import 'package:web3dart/web3dart.dart';
 
 class UserRepo {
   late final Privy privy;
@@ -29,7 +32,60 @@ class UserRepo {
   }
 
   Future<void> mint() async {
-    /*final wallet = currentUser?.embeddedEthereumWallets[0];
+    const String contractAbi = '''
+[
+  {
+    "inputs": [
+      {"internalType": "address", "name": "to", "type": "address"},
+      {"internalType": "string", "name": "uri", "type": "string"}
+    ],
+    "name": "safeMint",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  }
+]
+''';
+
+    final wallet = currentUser!.embeddedEthereumWallets[0];
+
+    //final client = Web3Client('https://spicy-rpc.chiliz.com', http.Client());
+
+    final contract = DeployedContract(
+      ContractAbi.fromJson(contractAbi, 'ChilizNFT'),
+      EthereumAddress.fromHex('0x736999a7f2e64c2e1F69F552c931E04cc1352443'),
+    );
+
+    // Encode the function call data
+    final mintFunction = contract.function('safeMint');
+    final data = mintFunction.encodeCall([
+      EthereumAddress.fromHex(wallet.address),
+      // 'to' is the user's wallet address
+      'blah blah',
+      // Metadata URI
+    ]);
+
+    final tx = {
+      'from': wallet.address,
+      'to': contract.address.with0x,
+      'data': '0x${bytesToHex(data)}',
+      'value': '0x${1.toRadixString(16)}',
+      'chainId': '0x${88882.toRadixString(16)}',
+    };
+
+    final result = await wallet.provider.request(
+      EthereumRpcRequest(method: 'eth_sendTransaction', params: [tx]),
+    );
+
+    result.fold(
+      onSuccess: (txHash) {
+        print('Transaction sent: $txHash');
+      },
+      onFailure: (error) {
+        print('Transaction failed: ${error.message}');
+      },
+    );
+    /*
     wallet?.provider
         .request(
           EthereumRpcRequest(
