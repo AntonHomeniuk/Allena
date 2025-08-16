@@ -18,7 +18,10 @@ class DashboardPage extends StatelessWidget {
           children: [
             FutureBuilder(
               future: getIt.get<UserRepo>().getBalance(),
-              builder: (context, snap) =>  Text('${snap.data ?? '...'} CHZ', textAlign: TextAlign.center),
+              builder: (context, snap) => Text(
+                '${snap.data ?? '...'} CHZ',
+                textAlign: TextAlign.center,
+              ),
             ),
             Text(
               '${address?.substring(0, 5)}...${address?.substring(address.length - 4, address.length)}',

@@ -27,7 +27,11 @@ class MyApp extends StatelessWidget {
       title: 'Allena',
       debugShowCheckedModeBanner: false,
       navigatorKey: getIt<NavigationService>().navigationKey,
-      theme: ThemeData(primarySwatch: Colors.pink),
+      theme: ThemeData(
+        primarySwatch: Colors.pink,
+        scaffoldBackgroundColor: Colors.black,
+        brightness: Brightness.dark,
+      ),
       home: SplashPage(),
     );
   }
