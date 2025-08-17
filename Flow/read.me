@@ -1,0 +1,379 @@
+# FlowNFT — ERC‑721 with 5/25/70 Initial Split & 10% EIP‑2981 Royalties
+
+A minimal ERC‑721 NFT smart contract with:
+
+* **Initial-sale split**: 5% → developers, 25% → content creators, 70% → charity
+* **Secondary royalties**: **10%** via **EIP‑2981** paid to a dedicated **revenue‑share contract** (which can implement any custom distribution logic)
+* OpenZeppelin‑based implementation, safe ETH transfers, and reentrancy protection
+
+> **Contract file:** `contracts/FlowNFT.sol`
+
+---
+
+## Table of Contents
+
+1. [Features](#features)
+2. [How the Money Flows](#how-the-money-flows)
+3. [Project Structure](#project-structure)
+4. [Prerequisites](#prerequisites)
+5. [Quickstart](#quickstart)
+6. [Configure & Deploy (Hardhat)](#configure--deploy-hardhat)
+7. [React Frontend (Vite + Ethers)](#react-frontend-vite--ethers)
+8. [Owner Controls](#owner-controls)
+9. [Testing](#testing)
+10. [Security Notes](#security-notes)
+11. [FAQ](#faq)
+12. [License](#license)
+
+---
+
+## Features
+
+* **5/25/70 split on mint** using exact basis‑point math (avoids rounding dust by sending the remainder to charity)
+* **10% royalties (EIP‑2981)**: marketplaces query `royaltyInfo` → funds the **revenueShare** address
+* **Owner‑configurable** wallets and mint price
+* **Max supply** enforced on‑chain
+* **OpenZeppelin**: ERC721, URI storage, Ownable, ReentrancyGuard, Address utils
+
+```solidity
+// Key constants in FlowNFT.sol
+uint96 private constant DEV_BPS = 500;      // 5%
+uint96 private constant CREATOR_BPS = 2500; // 25%
+uint96 private constant CHARITY_BPS = 7000; // 70%
+uint96 private constant ROYALTY_BPS = 1000; // 10%
+```
+
+---
+
+## How the Money Flows
+
+**Initial mint (`safeMint`)**
+
+```
+Buyer → Contract (msg.value)
+  ├─ 5% → devWallet
+  ├─ 25% → creatorWallet
+  └─ 70% (remainder) → charityWallet
+```
+
+**Secondary sale (marketplace with EIP‑2981)**
+
+```
+Marketplace → calls royaltyInfo(tokenId, salePrice)
+  ↳ (receiver = revenueShare, amount = 10% of salePrice)
+Marketplace → pays royalty to revenueShare
+revenueShare_contract → handles any custom split logic on its own
+```
+
+> This repository provides **FlowNFT** (the token contract). For royalties, you’ll also need to deploy **your own** `revenueShare` contract and pass its address to `FlowNFT` at deploy time.
+
+---
+
+## Project Structure
+
+```
+.
+├─ contracts/
+│  └─ FlowNFT.sol
+├─ frontend/                 # optional React app (see below)
+├─ scripts/
+│  └─ deploy.ts              # example deploy script (Hardhat)
+├─ hardhat.config.ts
+├─ package.json
+└─ README.md
+```
+
+> If you’re starting from just the Solidity file, follow the steps below to scaffold Hardhat + a React (Vite) app.
+
+---
+
+## Prerequisites
+
+* **Node.js** ≥ 18
+* **pnpm** (recommended) or yarn/npm
+* **Hardhat** (installed via dev dependencies)
+* A wallet/private key with testnet ETH
+* RPC endpoint (Alchemy/Infura/etc.)
+
+---
+
+## Quickstart
+
+```bash
+# 1) Clone and install
+pnpm install
+
+# 2) Compile
+pnpm hardhat compile
+
+# 3) Run local chain
+pnpm hardhat node
+
+# 4) Deploy to local (example deploy script below)
+pnpm hardhat run scripts/deploy.ts --network localhost
+```
+
+Create `.env` at the repo root:
+
+```bash
+# EOA used to deploy (DO NOT commit!)
+PRIVATE_KEY=0xabc...yourprivatekey
+
+# RPCs\N
+# example: Sepolia
+RPC_URL_SEPOLIA=https://sepolia.infura.io/v3/YOUR_KEY
+
+# Constructor params
+DEV_WALLET=0xDev...
+CREATOR_WALLET=0xCreator...
+CHARITY_WALLET=0xCharity...
+REVENUE_SHARE=0xRevenueShare...
+MINT_PRICE_WEI=100000000000000000   # 0.1 ETH
+MAX_SUPPLY=10000
+```
+
+---
+
+## Configure & Deploy (Hardhat)
+
+Install toolchain:
+
+```bash
+pnpm add -D hardhat @nomiclabs/hardhat-ethers ethers@^6 typescript ts-node dotenv @typechain/hardhat typechain @openzeppelin/contracts
+```
+
+`hardhat.config.ts` (example):
+
+```ts
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomiclabs/hardhat-ethers";
+import * as dotenv from "dotenv";
+dotenv.config();
+
+const config: HardhatUserConfig = {
+  solidity: "0.8.20",
+  networks: {
+    localhost: { url: "http://127.0.0.1:8545" },
+    sepolia: {
+      url: process.env.RPC_URL_SEPOLIA!,
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+    },
+  },
+};
+export default config;
+```
+
+`scripts/deploy.ts` (example):
+
+```ts
+import { ethers } from "hardhat";
+
+async function main() {
+  const dev = process.env.DEV_WALLET!;
+  const creator = process.env.CREATOR_WALLET!;
+  const charity = process.env.CHARITY_WALLET!;
+  const revenueShare = process.env.REVENUE_SHARE!;
+  const mintPriceWei = BigInt(process.env.MINT_PRICE_WEI || "100000000000000000");
+  const maxSupply = BigInt(process.env.MAX_SUPPLY || "10000");
+
+  const FlowNFT = await ethers.getContractFactory("FlowNFT");
+  const flow = await FlowNFT.deploy(
+    dev,
+    creator,
+    charity,
+    revenueShare,
+    mintPriceWei,
+    maxSupply
+  );
+
+  await flow.waitForDeployment();
+  console.log("FlowNFT deployed to:", await flow.getAddress());
+}
+
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
+```
+
+Deploy:
+
+```bash
+pnpm hardhat run scripts/deploy.ts --network sepolia
+```
+
+---
+
+## React Frontend (Vite + Ethers)
+
+Scaffold a React app inside `frontend/`:
+
+```bash
+pnpm create vite@latest frontend -- --template react-ts
+cd frontend
+pnpm add ethers
+```
+
+> Copy the compiled ABI to the frontend (after `pnpm hardhat compile`):
+>
+> * From: `artifacts/contracts/FlowNFT.sol/FlowNFT.json`
+> * To: `frontend/src/abi/FlowNFT.json`
+
+Set env in `frontend/.env`:
+
+```bash
+VITE_CONTRACT_ADDRESS=0xYourDeployedFlowNFT
+VITE_DEFAULT_TOKEN_URI=https://ipfs.io/ipfs/<CID>/metadata.json
+```
+
+`src/App.tsx` (minimal example):
+
+```tsx
+import { useEffect, useState } from "react";
+import { ethers } from "ethers";
+import abi from "./abi/FlowNFT.json";
+
+const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS as string;
+
+export default function App() {
+  const [account, setAccount] = useState<string | null>(null);
+  const [mintPrice, setMintPrice] = useState<string>("0");
+  const [to, setTo] = useState<string>("");
+  const [uri, setUri] = useState<string>(import.meta.env.VITE_DEFAULT_TOKEN_URI || "");
+  const [txHash, setTxHash] = useState<string>("");
+
+  async function getProvider() {
+    if (!window.ethereum) throw new Error("MetaMask not found");
+    const provider = new ethers.BrowserProvider(window.ethereum as any);
+    return provider;
+  }
+
+  async function connect() {
+    const provider = await getProvider();
+    const accounts = await provider.send("eth_requestAccounts", []);
+    setAccount(accounts[0]);
+  }
+
+  async function readMintPrice() {
+    const provider = await getProvider();
+    const contract = new ethers.Contract(CONTRACT_ADDRESS, abi.abi, provider);
+    const price = await contract.mintPrice();
+    setMintPrice(ethers.formatEther(price));
+  }
+
+  async function mint() {
+    if (!to || !uri) return alert("Enter recipient and token URI");
+    const provider = await getProvider();
+    const signer = await provider.getSigner();
+    const contract = new ethers.Contract(CONTRACT_ADDRESS, abi.abi, signer);
+
+    const value = ethers.parseEther(mintPrice); // assumes mintPrice was read from chain
+    const tx = await contract.safeMint(to, uri, { value });
+    const receipt = await tx.wait();
+    setTxHash(receipt?.hash || tx.hash);
+  }
+
+  useEffect(() => { readMintPrice().catch(console.error); }, []);
+
+  return (
+    <main style={{ maxWidth: 520, margin: "40px auto", fontFamily: "system-ui, sans-serif" }}>
+      <h1>FlowNFT Mint</h1>
+      <button onClick={connect}>{account ? `Connected: ${account}` : "Connect Wallet"}</button>
+
+      <p>Mint price: <strong>{mintPrice} ETH</strong></p>
+
+      <label>Recipient (to)</label>
+      <input value={to} onChange={(e) => setTo(e.target.value)} placeholder="0x..." style={{ width: "100%" }} />
+
+      <label>Token URI</label>
+      <input value={uri} onChange={(e) => setUri(e.target.value)} placeholder="ipfs://... or https://..." style={{ width: "100%" }} />
+
+      <button onClick={mint} style={{ marginTop: 12 }}>Mint</button>
+
+      {txHash && (
+        <p>Tx: <a href={`https://sepolia.etherscan.io/tx/${txHash}`} target="_blank" rel="noreferrer">{txHash}</a></p>
+      )}
+    </main>
+  );
+}
+```
+
+Run the UI:
+
+```bash
+pnpm dev
+```
+
+> For wallet UX and chains list, you can integrate Wagmi + RainbowKit later.
+
+---
+
+## Owner Controls
+
+* **Update mint price**: `setMintPrice(uint256 newPriceWei)`
+* **Update payout wallets**: `setWallets(address dev, address creator, address charity)`
+* **Update royalty receiver**: `setRevenueShare(address revenueShare)`
+
+**Constructor args at deploy**:
+
+```
+(devWallet, creatorWallet, charityWallet, revenueShare, mintPriceWei, maxSupply)
+```
+
+---
+
+## Testing
+
+Install test libs and create `test/FlowNFT.ts`:
+
+```bash
+pnpm add -D vitest ts-node @types/chai @types/mocha chai
+```
+
+Example checks to add:
+
+* Splits 5/25/70 on `safeMint` (use Hardhat network & impersonate recipients)
+* Max supply reverts as expected
+* `royaltyInfo` returns `(revenueShare, 10% of sale price)`
+* Owner guards on setters
+
+Run tests:
+
+```bash
+pnpm hardhat test
+```
+
+---
+
+## Security Notes
+
+* **Not audited**. Use at your own risk.
+* Uses `ReentrancyGuard` on `safeMint` and `Address.sendValue` for ETH transfers.
+* Percentages are **immutable** in code (5/25/70, 10% royalty). Change requires redeploy.
+* `revenueShare` must be a trustworthy contract you control.
+
+---
+
+## FAQ
+
+**Q: Can buyers tip above the mint price?**
+Yes. Any excess `msg.value` is split using the same 5/25/70 ratios.
+
+**Q: Which marketplaces support EIP‑2981?**
+Most major marketplaces read 2981. They will route **10%** to your `revenueShare` address, which then distributes funds per its own logic.
+
+**Q: How do I store metadata?**
+Host JSON on IPFS (Pinata/web3.storage/etc.) and pass its URL as the `uri` to `safeMint`.
+
+---
+
+## License
+
+MIT — see `LICENSE`.
+
+---
+
+### Acknowledgements
+
+* [OpenZeppelin Contracts](https://docs.openzeppelin.com/contracts)
+* EIP‑2981 Royalty Standard
