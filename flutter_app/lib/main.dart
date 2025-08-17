@@ -36,3 +36,37 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+
+Future? _currentLoadingDialog;
+
+Future showLoadingDialog() async {
+  _currentLoadingDialog ??= showDialog(
+    barrierDismissible: false,
+    context: getIt.get<NavigationService>().navigatorContext,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        content: WillPopScope(
+          onWillPop: () async {
+            return false;
+          },
+          child: const SizedBox(
+            width: 48,
+            height: 48,
+            child: FittedBox(child: CircularProgressIndicator.adaptive()),
+          ),
+        ),
+      );
+    },
+  );
+  await _currentLoadingDialog;
+}
+
+void hideLoadingDialog() {
+  if (_currentLoadingDialog != null) {
+    getIt.get<NavigationService>().navigator.pop();
+    _currentLoadingDialog = null;
+  }
+}

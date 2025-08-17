@@ -1,7 +1,8 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:dio/dio.dart';
-import 'package:http/http.dart' as http;
 import 'package:privy_flutter/privy_flutter.dart';
 import 'package:wallet/wallet.dart';
 import 'package:web3dart/web3dart.dart';
@@ -9,6 +10,21 @@ import 'package:web3dart/web3dart.dart';
 class UserRepo {
   late final Privy privy;
   PrivyUser? currentUser;
+  List<String>? nftCollection;
+  late final StreamController<List<String>?> _nftCollectionController =
+      StreamController.broadcast();
+
+  Stream<List<String>?> get nftCollectionStream {
+    return _nftCollectionController.stream;
+  }
+
+  double? balance;
+  late final StreamController<double?> _balanceStreamController =
+      StreamController.broadcast();
+
+  Stream<double?> get balanceStream {
+    return _balanceStreamController.stream;
+  }
 
   UserRepo() {
     final privyConfig = PrivyConfig(
@@ -31,7 +47,12 @@ class UserRepo {
     await privy.logout();
   }
 
-  Future<void> mint() async {
+  Future<void> mint(
+    String contractHex,
+    int price,
+    void Function() onSuccess,
+    void Function(PrivyException error) onFailure,
+  ) async {
     const String contractAbi = '''
 [
   {
@@ -49,92 +70,85 @@ class UserRepo {
 
     final wallet = currentUser!.embeddedEthereumWallets[0];
 
-    //final client = Web3Client('https://spicy-rpc.chiliz.com', http.Client());
-
     final contract = DeployedContract(
       ContractAbi.fromJson(contractAbi, 'ChilizNFT'),
-      EthereumAddress.fromHex('0x736999a7f2e64c2e1F69F552c931E04cc1352443'),
+      EthereumAddress.fromHex(contractHex),
     );
 
     // Encode the function call data
     final mintFunction = contract.function('safeMint');
     final data = mintFunction.encodeCall([
       EthereumAddress.fromHex(wallet.address),
-      // 'to' is the user's wallet address
       'blah blah',
-      // Metadata URI
     ]);
 
     final tx = {
       'from': wallet.address,
       'to': contract.address.with0x,
       'data': '0x${bytesToHex(data)}',
-      'value': '0x${1.toRadixString(16)}',
+      'value': '0x${price.toRadixString(16)}',
       'chainId': '0x${88882.toRadixString(16)}',
     };
 
     final result = await wallet.provider.request(
-      EthereumRpcRequest(method: 'eth_sendTransaction', params: [tx]),
+      EthereumRpcRequest(
+        method: 'eth_sendTransaction',
+        params: [jsonEncode(tx)],
+      ),
     );
 
     result.fold(
-      onSuccess: (txHash) {
-        print('Transaction sent: $txHash');
+      onSuccess: (txHash) async {
+        onSuccess.call();
+
+        _nftCollectionController.add(
+          List.of(nftCollection ?? [])..add(contractHex),
+        );
+        balance = null;
+        _balanceStreamController.add(null);
+        await Future.delayed(Duration(seconds: 10));
+        await getBalance();
       },
       onFailure: (error) {
-        print('Transaction failed: ${error.message}');
+        onFailure.call(error);
       },
     );
-    /*
-    wallet?.provider
-        .request(
-          EthereumRpcRequest(
-            method: 'eth_signTransaction',
-            params: [
-              jsonEncode({
-                "to": "0x736999a7f2e64c2e1F69F552c931E04cc1352443",
-                "chain_id": "0x15B32",
-                'value': '0x186a0',
-                'from':'${wallet.address}'
-              }),
-            ],
-          ),
-        )
-        .then((v) {
-          print('asd');
-        })
-        .onError((e, s) {});
-    (await currentUser?.getAccessToken())?.fold(
-      onSuccess: (token) async {
-        try {
-          await Dio().post(
-            'https://api.privy.io/v1/wallets/${wallet?.id}/rpc',
-            options: Options(
+  }
+
+  Future<void> getNftsCollection() async {
+    try {
+      final wallet = currentUser?.embeddedEthereumWallets[0];
+
+      final response =
+          await Dio(
+            BaseOptions(
               headers: {
-                'Content-Type': 'application/json',
-                'privy-authorization-signature': '$token',
-                'Authorization':
-                    'Basic ${base64.encode(utf8.encode('cmedf19v400j4l70bhm9ubix5:5AscHzURiha4dDDtqoeuPhgWq3kbnjUSfqzaQyZxXP1a2sPUfAQLLkxqK97pkbgGFQmV1gbzBssGzGhs7PVu8vw7'))}',
-                'privy-app-id': 'cmedf19v400j4l70bhm9ubix5',
+                'x-api-key':
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6ImE5NjBmNzkyLTVlNjktNDA1OC1iMTExLWY0OGU0OWMyNmVlNCIsIm9yZ0lkIjoiNDY1NTIzIiwidXNlcklkIjoiNDc4OTI0IiwidHlwZUlkIjoiYTVjNWI1YTgtYmQ5Zi00ZTQxLTg1NDktMGM1MmRkZTUyYzRlIiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NTUzNzgyNDcsImV4cCI6NDkxMTEzODI0N30.pGFkUplq_EeoUcWL7LiE_qBRNzkMu59W4LnupjbdLTs',
               },
             ),
-            data:
-                '{"method": "eth_sign7702Authorization","params": {"contract": "0x736999a7f2e64c2e1F69F552c931E04cc1352443","chain_id": "15B32"}}',
+          ).get(
+            'https://deep-index.moralis.io/api/v2.2/${wallet?.address}/nft/collections?chain=chiliz%20testnet',
           );
-        } catch (e) {
-          print('asd ${(e as DioException).response}');
-        }
-      },
-      onFailure: (e) {
-        print('asd $e');
-      },
-    );*/
+      nftCollection =
+          ((response.data as Map<String, dynamic>)['result'] as List<dynamic>)
+              .map(
+                (e) => ((e as Map<String, dynamic>)['token_address'] as String)
+                    .toLowerCase(),
+              )
+              .toList();
+
+      _nftCollectionController.add(nftCollection);
+    } catch (_) {}
   }
 
   Future<double> getBalance() async {
-    mint();
+    balance = null;
+    _balanceStreamController.add(null);
+
     try {
       final wallet = currentUser?.embeddedEthereumWallets[0];
+      await getNftsCollection();
       final response = await Dio().get(
         'https://spicy-explorer.chiliz.com/api?module=account&action=eth_get_balance&address=${wallet?.address}',
       );
@@ -148,7 +162,9 @@ class UserRepo {
             int.parse(s.$2, radix: 16) * pow(16.0, hexString.length - s.$1 - 1);
         balance += hx;
       });
-      return balance / 1_000_000_000_000_000_000.0;
+      this.balance = balance / 1_000_000_000_000_000_000.0;
+      _balanceStreamController.add(this.balance ?? 0);
+      return this.balance ?? 0;
     } catch (_) {}
 
     return 0;

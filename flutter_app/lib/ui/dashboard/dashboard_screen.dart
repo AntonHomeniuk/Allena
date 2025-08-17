@@ -1,3 +1,5 @@
+import 'package:allena/main.dart';
+import 'package:allena/repo/user_repo.dart';
 import 'package:allena/ui/dashboard/dashboard_model.dart';
 import 'package:flutter/material.dart';
 
@@ -148,68 +150,108 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       SizedBox(height: 16),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: Wrap(
-                              runSpacing: 4,
-                              spacing: 4,
-                              children: item.tags
-                                  .map(
-                                    (e) => Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.all(
-                                          Radius.circular(12),
+                      StreamBuilder<List<String>?>(
+                        stream: getIt.get<UserRepo>().nftCollectionStream,
+                        builder: (context, snap) {
+                          final nftCollection =
+                              (snap.data ??
+                              getIt.get<UserRepo>().nftCollection);
+
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                child: Wrap(
+                                  runSpacing: 4,
+                                  spacing: 4,
+                                  children: item.tags
+                                      .map(
+                                        (e) => Container(
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.all(
+                                              Radius.circular(12),
+                                            ),
+                                            border: BoxBorder.all(
+                                              color: Color(
+                                                0xFF77FE53,
+                                              ).withAlpha(38),
+                                            ),
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.fromLTRB(
+                                              13,
+                                              4,
+                                              13,
+                                              4,
+                                            ),
+                                            child: Text(e),
+                                          ),
                                         ),
-                                        border: BoxBorder.all(
-                                          color: Color(
-                                            0xFF77FE53,
-                                          ).withAlpha(38),
-                                        ),
-                                      ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.fromLTRB(
-                                          13,
-                                          4,
-                                          13,
-                                          4,
-                                        ),
-                                        child: Text(e),
-                                      ),
+                                      )
+                                      .toList(),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  if (item.price > 0 &&
+                                      (nftCollection?.contains(
+                                            item.contract?.toLowerCase(),
+                                          ) ==
+                                          false)) {
+                                    showLoadingDialog();
+
+                                    getIt<UserRepo>().mint(
+                                      item.contract!,
+                                      item.priceWei,
+                                      () {
+                                        hideLoadingDialog();
+                                      },
+                                      (e) {
+                                        hideLoadingDialog();
+                                      },
+                                    );
+                                  }
+                                },
+                                child: Container(
+                                  margin: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(12),
                                     ),
-                                  )
-                                  .toList(),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              //TODO
-                            },
-                            child: Container(
-                              margin: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(12),
+                                    color:
+                                        (nftCollection == null &&
+                                            item.price > 0)
+                                        ? Color(0xFF77FE53).withAlpha(25)
+                                        : Color(0xFF77FE53),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      13,
+                                      4,
+                                      13,
+                                      4,
+                                    ),
+                                    child: Text(
+                                      (item.price > 0)
+                                          ? (nftCollection?.contains(
+                                                      item.contract
+                                                          ?.toLowerCase(),
+                                                    )) ==
+                                                    true
+                                                ? 'Bought'
+                                                : '${item.price}\$'
+                                          : 'Free',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(color: Colors.black),
+                                    ),
+                                  ),
                                 ),
-                                color: Color(0xFF77FE53),
                               ),
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  13,
-                                  4,
-                                  13,
-                                  4,
-                                ),
-                                child: Text(
-                                  (item.price > 0) ? '${item.price}\$' : 'Free',
-                                  style: Theme.of(context).textTheme.titleMedium
-                                      ?.copyWith(color: Colors.black),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                            ],
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -227,6 +269,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   final List<DashboardModel> dashboardList = [
     DashboardModel(
+      contract: '0xc68b811d28d140ec04666ad970d00fee5156f400',
       title: 'From Dreams to Goals',
       desc: 'My journey, how I achieved success and play football',
       charities: [
@@ -237,6 +280,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       tags: ['Football', 'LifeStyle', 'Inspiration', 'Motivation'],
       imgName: '1.jpg',
       price: 50,
+      priceWei: 1000000000000000000,
     ),
     DashboardModel(
       title: 'From Dreams to Goals',
@@ -249,8 +293,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       tags: ['Hockey', 'Leadership', 'Sports Legacy', 'NHL'],
       imgName: '2.jpg',
       price: 0,
+      priceWei: 0,
     ),
     DashboardModel(
+      contract: '0x736999a7f2e64c2e1F69F552c931E04cc1352443',
       title: 'From Dreams to Goals',
       desc: 'My journey, how I achieved success and play football',
       charities: [
@@ -260,7 +306,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ],
       tags: ['YouTube', 'Global Impact', 'Challenge', 'Charity'],
       imgName: '3.jpg',
-      price: 50,
+      price: 10,
+      priceWei: 1,
     ),
     DashboardModel(
       title: 'From Dreams to Goals',
@@ -273,8 +320,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       tags: ['MMA', 'UFC', 'Fighting Spirit', 'Discipline'],
       imgName: '4.jpg',
       price: 0,
+      priceWei: 0,
     ),
     DashboardModel(
+      contract: '0x5caDB0DF90A197387C3c1C48c3f259E50fe34735',
       title: 'From Dreams to Goals',
       desc: 'My journey, how I achieved success and play football',
       charities: [
@@ -284,7 +333,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ],
       tags: ['Basketball', 'NBA', 'Education', 'Leadership'],
       imgName: '5.jpg',
-      price: 0,
+      price: 10,
+      priceWei: 100000000000000,
     ),
   ];
 }

@@ -13,7 +13,6 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  bool _isLoading = false;
   bool _isCodeSent = false;
 
   final TextEditingController emailController = TextEditingController(
@@ -24,36 +23,27 @@ class _AuthScreenState extends State<AuthScreen> {
   final FocusNode otpFocusNode = FocusNode();
 
   Future<void> _sendOtp() async {
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-    });
+    showLoadingDialog();
 
     getIt.get<UserRepo>().sendOtp(
       emailController.text,
       () {
+        hideLoadingDialog();
+
         setState(() {
           _isCodeSent = true;
-          _isLoading = false;
 
           otpFocusNode.requestFocus();
         });
       },
       () {
-        setState(() {
-          _isLoading = false;
-        });
+        hideLoadingDialog();
       },
     );
   }
 
   Future<void> _checkOtp() async {
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-    });
+    showLoadingDialog();
 
     getIt.get<UserRepo>().checkOtp(
       emailController.text,
@@ -67,11 +57,12 @@ class _AuthScreenState extends State<AuthScreen> {
       () {
         setState(() {
           Fluttertoast.showToast(msg: 'Failed to authorize');
-          _isLoading = false;
           Future.delayed(Duration(milliseconds: 100)).then((v) {
             otpFocusNode.requestFocus();
           });
         });
+
+        hideLoadingDialog();
       },
     );
   }
@@ -95,7 +86,7 @@ class _AuthScreenState extends State<AuthScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
                 child: TextField(
-                  enabled: !_isLoading && !_isCodeSent,
+                  enabled: !_isCodeSent,
                   controller: emailController,
                   decoration: InputDecoration(hintText: 'Email'),
                   onSubmitted: (s) {
@@ -112,7 +103,6 @@ class _AuthScreenState extends State<AuthScreen> {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
                   child: TextField(
-                    enabled: !_isLoading,
                     focusNode: otpFocusNode,
                     decoration: InputDecoration(
                       fillColor: Colors.red,
@@ -128,14 +118,14 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
             ],
             SizedBox(height: 16),
-            if (!_isCodeSent && !_isLoading)
+            if (!_isCodeSent)
               ElevatedButton(
                 child: Text('Submit'),
                 onPressed: () {
                   _sendOtp();
                 },
               ),
-            if (_isCodeSent && !_isLoading)
+            if (_isCodeSent)
               ElevatedButton(
                 child: Text('Submit'),
                 onPressed: () {

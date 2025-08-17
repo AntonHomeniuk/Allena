@@ -1,7 +1,5 @@
 import 'package:allena/main.dart';
-import 'package:allena/repo/navigation_service.dart';
 import 'package:allena/repo/user_repo.dart';
-import 'package:allena/ui/auth/auth_page.dart';
 import 'package:allena/ui/dashboard/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:privy_flutter/privy_flutter.dart';
@@ -13,6 +11,7 @@ class DashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentUser = getIt.get<UserRepo>().currentUser;
     final address = currentUser?.embeddedEthereumWallets.firstOrNull?.address;
+    getIt<UserRepo>().getBalance();
 
     return Scaffold(
       body: Column(
@@ -64,14 +63,21 @@ class DashboardPage extends StatelessWidget {
                   ),
                 ),
                 Spacer(),
-                Padding(
-                  padding: const EdgeInsets.only(right: 16,left: 8),
-                  child: FutureBuilder(
-                    future: getIt.get<UserRepo>().getBalance(),
-                    builder: (context, snap) => Text(
-                      'Balance: ${snap.data ?? '...'}',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleMedium,
+                GestureDetector(
+                  onTap: () {
+                    getIt.get<UserRepo>().getBalance();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 16, left: 8),
+                    child: StreamBuilder<double?>(
+                      stream: getIt.get<UserRepo>().balanceStream,
+                      builder: (context, snap) {
+                        return Text(
+                          'Balance: ${(snap.data ?? getIt.get<UserRepo>().balance)?.toStringAsFixed(1) ?? '...'}',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -87,21 +93,10 @@ class DashboardPage extends StatelessWidget {
                     });
                   },
                   child: Text('Logout'),
-                )*/
+                ),*/
               ],
             ),
           ),
-          /* FutureBuilder(
-            future: getIt.get<UserRepo>().getBalance(),
-            builder: (context, snap) => Text(
-              '${snap.data ?? '...'} CHZ',
-              textAlign: TextAlign.center,
-            ),
-          ),
-          Text(
-            '${address?.substring(0, 5)}...${address?.substring(address.length - 4, address.length)}',
-            textAlign: TextAlign.center,
-          ),*/
           Expanded(child: DashboardScreen()),
         ],
       ),
