@@ -5,6 +5,7 @@ class DashboardModel {
   final List<String> charities;
   final List<String> tags;
   final String imgName;
+  final String videoName;
   final int price;
   final int priceWei;
 
@@ -15,6 +16,7 @@ class DashboardModel {
     required this.charities,
     required this.tags,
     required this.imgName,
+    required this.videoName,
     required this.price,
     required this.priceWei,
   });
@@ -28,6 +30,7 @@ class DashboardModel {
           .toList(),
       tags = (json['tags'] as List<dynamic>).map((e) => e as String).toList(),
       imgName = json['imgName'] as String,
+      videoName = json['videoName'] as String,
       price = json['price'] as int,
       priceWei = json['priceWei'] as int;
 
@@ -38,6 +41,7 @@ class DashboardModel {
     'charities': charities,
     'tags': tags,
     'imgName': imgName,
+    'videoName': videoName,
     'price': price,
     'priceWei': priceWei,
   };

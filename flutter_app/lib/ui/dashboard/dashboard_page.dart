@@ -36,7 +36,7 @@ class DashboardPage extends StatelessWidget {
                           padding: const EdgeInsets.all(4),
                           child: SizedBox(
                             height: 34,
-                            child: Image.asset('assets/ava_stub.png'),
+                            child: Image.asset('assets/ava_stub.webp'),
                           ),
                         ),
                         Padding(

@@ -101,9 +101,9 @@ class UserRepo {
       onSuccess: (txHash) async {
         onSuccess.call();
 
-        _nftCollectionController.add(
-          List.of(nftCollection ?? [])..add(contractHex),
-        );
+        await Future.delayed(Duration(milliseconds: 200));
+        nftCollection = List.of(nftCollection ?? [])..add(contractHex);
+        _nftCollectionController.add(nftCollection);
         balance = null;
         _balanceStreamController.add(null);
         await Future.delayed(Duration(seconds: 10));
