@@ -15,9 +15,7 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   bool _isCodeSent = false;
 
-  final TextEditingController emailController = TextEditingController(
-    text: 'anton.homeniuk@gmail.com',
-  );
+  final TextEditingController emailController = TextEditingController(text: '');
   final TextEditingController otpController = TextEditingController(text: '');
 
   final FocusNode otpFocusNode = FocusNode();
@@ -104,6 +102,9 @@ class _AuthScreenState extends State<AuthScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
                   child: TextField(
                     focusNode: otpFocusNode,
+                    onSubmitted: (s) {
+                      _checkOtp();
+                    },
                     decoration: InputDecoration(
                       fillColor: Colors.red,
                       hintText: 'OTP',

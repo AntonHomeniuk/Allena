@@ -4,7 +4,7 @@ import 'package:allena/ui/dashboard/dashboard_model.dart';
 import 'package:dio/dio.dart';
 
 class WalRepo {
-  final stubListBlobId = 'gmags6Cx_LCsh3isvwy4hWvQTU6d_3hcSowDaZ_wTW4';
+  final stubListBlobId = 'vwD9dWtlit-Ue5_eDFPI2O94aDxOwXC85l13e37lcBg';
 
   WalRepo() {
     //stubCreateListToWal();
@@ -68,9 +68,9 @@ final List<DashboardModel> dashboardList = [
     desc:
         'Exclusive trainings, unique methods, personal growth, and investment in the future.',
     charities: [
-      'Portugal Youth Football Academies',
-      'Global Children’s Health & Education',
-      'African Grassroots Sports Programs',
+      'Lighthouse Portugal (Portimão, Portugal)',
+      'Mathare Youth Sports Association (Nairobi, Kenya)',
+      'Kampala Kids League (Kampala, Uganda)',
     ],
     tags: ['Football', 'LifeStyle', 'Inspiration', 'Motivation'],
     imgName: '1_1.jpg',
@@ -94,9 +94,9 @@ final List<DashboardModel> dashboardList = [
     desc:
         'How to build a career and life with a champion’s mindset. From training to leadership and balance between sport and family.',
     charities: [
-      'Youth Hockey Development',
-      'Children’s Hospitals & Health Programs',
-      'Global Sports Access',
+      'Right to Dream Academy (Accra, Ghana)',
+      'Academie Generation Foot (Dakar, Senegal)',
+      'Young Africans SC Academy (Dar es Salaam, Tanzania)',
     ],
     tags: ['Hockey', 'Leadership', 'Sports Legacy', 'NHL'],
     imgName: '2_2.jpg',
@@ -122,9 +122,9 @@ final List<DashboardModel> dashboardList = [
     desc:
         'How to launch large-scale projects, work with a team, invest in ideas, and build a personal brand.',
     charities: [
-      'Global Food Relief',
-      'Education & Schools',
-      'Environmental Projects',
+      'Horn of Africa Development Initiative (Marsabit, Kenya)',
+      'Sports Aid Africa (Kibera, Nairobi, Kenya)',
+      'Ability Sports Africa (Uganda)',
     ],
     tags: ['YouTube', 'Global Impact', 'Challenge', 'Charity'],
     imgName: '3_3.jpg',
