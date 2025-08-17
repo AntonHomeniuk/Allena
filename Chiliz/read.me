@@ -1,0 +1,48 @@
+# ChilizNFTv2 — ERC‑721 with 5/25/70 Initial Split & 10% EIP‑2981 Royalties
+
+A minimal ERC‑721 NFT smart contract with:
+
+* **Initial-sale split**: 5% → developers, 25% → content creators, 70% → charity
+* **Secondary royalties**: **10%** via **EIP‑2981** paid to a dedicated **revenue‑share contract**
+* OpenZeppelin‑based implementation, safe ETH transfers, and reentrancy protection
+
+## Features
+
+- **5/25/70 split on mint** using exact basis‑point math (avoids rounding dust by sending the remainder to charity)
+- **10% royalties (EIP‑2981)**: marketplaces query `royaltyInfo` → funds the **revenueShare** address
+- **Owner‑configurable** wallets and mint price
+- **Max supply** enforced on‑chain
+- **OpenZeppelin**: ERC721, URI storage, Ownable, ReentrancyGuard, Address utils
+
+## How the Money Flows
+
+**Initial mint (`safeMint`)**
+
+```
+Buyer → Contract (msg.value)
+  ├─ 5% → devWallet
+  ├─ 25% → creatorWallet
+  └─ 70% (remainder) → charityWallet
+```
+
+**Secondary sale (marketplace with EIP‑2981)**
+
+```
+Marketplace → calls royaltyInfo(tokenId, salePrice)
+  ↳ (receiver = revenueShare, amount = 10% of salePrice)
+Marketplace → pays royalty to revenueShare
+revenueShare_contract → handles any custom split logic on its own
+```
+
+## Usage
+
+- Deploy with constructor arguments:
+  - `devWallet`, `creatorWallet`, `charityWallet`, `revenueShare`, `mintPrice`, `maxSupply`
+- Use `safeMint` to mint NFTs and split proceeds
+- Use `setMintPrice`, `setWallets`, `setRevenueShare` for admin controls
+
+## Security Notes
+
+- Uses `ReentrancyGuard` and `Address.sendValue` for ETH transfers.
+- Percentages are **immutable** in code (5/25/70, 10% royalty). Change requires redeploy.
+- `revenueShare` must be a trustworthy contract you control.
