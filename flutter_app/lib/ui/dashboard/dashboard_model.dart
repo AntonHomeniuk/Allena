@@ -18,4 +18,27 @@ class DashboardModel {
     required this.price,
     required this.priceWei,
   });
+
+  DashboardModel.fromJson(Map<String, dynamic> json)
+    : contract = json['contract'] as String?,
+      title = json['title'] as String,
+      desc = json['desc'] as String,
+      charities = (json['charities'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
+      tags = (json['tags'] as List<dynamic>).map((e) => e as String).toList(),
+      imgName = json['imgName'] as String,
+      price = json['price'] as int,
+      priceWei = json['priceWei'] as int;
+
+  Map<String, dynamic> toJson() => {
+    'contract': contract,
+    'title': title,
+    'desc': desc,
+    'charities': charities,
+    'tags': tags,
+    'imgName': imgName,
+    'price': price,
+    'priceWei': priceWei,
+  };
 }

@@ -1,5 +1,6 @@
 import 'package:allena/main.dart';
 import 'package:allena/repo/user_repo.dart';
+import 'package:allena/repo/wal_repo.dart';
 import 'package:allena/ui/dashboard/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:privy_flutter/privy_flutter.dart';
@@ -97,7 +98,22 @@ class DashboardPage extends StatelessWidget {
               ],
             ),
           ),
-          Expanded(child: DashboardScreen()),
+          Expanded(
+            child: FutureBuilder(
+              future: getIt.get<WalRepo>().getDashboardListFromWal(),
+              builder: (context, asyncSnapshot) {
+                final items = asyncSnapshot.data;
+                if (items == null) {
+                  return Center(child: CircularProgressIndicator());
+                }
+
+                if (items.isNotEmpty) {
+                  return DashboardScreen(items);
+                }
+                return Center(child: Text('Failed to load'));
+              },
+            ),
+          ),
         ],
       ),
     );

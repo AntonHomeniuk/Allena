@@ -1,5 +1,6 @@
 import 'package:allena/repo/navigation_service.dart';
 import 'package:allena/repo/user_repo.dart';
+import 'package:allena/repo/wal_repo.dart';
 import 'package:allena/ui/splash/splash_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,6 +12,7 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   getIt.registerSingleton<UserRepo>(UserRepo());
+  getIt.registerSingleton<WalRepo>(WalRepo());
   getIt.registerLazySingleton<NavigationService>(() => NavigationService());
 
   runApp(MyApp());
@@ -36,7 +38,6 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
 
 Future? _currentLoadingDialog;
 
